@@ -6,7 +6,13 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery, ApiParam, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiQuery,
+  ApiParam,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { NewsProviderService } from './news-provider.service';
 import {
   NewsArticlesResponseDto,
@@ -40,7 +46,12 @@ export class NewsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Search news articles by keyword' })
   @ApiQuery({ name: 'q', required: true, type: String, example: 'Bitcoin ETF' })
-  @ApiQuery({ name: 'source', required: true, type: String, example: 'coindesk' })
+  @ApiQuery({
+    name: 'source',
+    required: true,
+    type: String,
+    example: 'coindesk',
+  })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
   @ApiQuery({ name: 'lang', required: false, type: String, example: 'EN' })
   @ApiResponse({ status: 200, type: NewsSearchResponseDto })
@@ -61,7 +72,11 @@ export class NewsController {
   @Get('categories')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get all news categories' })
-  @ApiQuery({ name: 'status', required: false, enum: ['ACTIVE', 'INACTIVE', 'ALL'] })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['ACTIVE', 'INACTIVE', 'ALL'],
+  })
   @ApiResponse({ status: 200, type: NewsCategoriesResponseDto })
   async getCategories(
     @Query('status') status?: 'ACTIVE' | 'INACTIVE' | 'ALL',
@@ -72,7 +87,12 @@ export class NewsController {
   @Get('article')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get single article by source and GUID' })
-  @ApiQuery({ name: 'source_key', required: true, type: String, example: 'coindesk' })
+  @ApiQuery({
+    name: 'source_key',
+    required: true,
+    type: String,
+    example: 'coindesk',
+  })
   @ApiQuery({ name: 'guid', required: true, type: String })
   @ApiResponse({ status: 200, type: SingleArticleResponseDto })
   async getArticle(

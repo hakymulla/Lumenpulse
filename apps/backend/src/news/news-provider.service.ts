@@ -82,11 +82,17 @@ export class NewsProviderService {
     const { searchString, sourceKey, lang = 'EN', limit = 20 } = options;
 
     if (!searchString?.trim()) {
-      throw new HttpException('Search string is required', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Search string is required',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     if (!sourceKey?.trim()) {
-      throw new HttpException('Source key is required for search', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Source key is required for search',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const params: Record<string, string> = {
@@ -96,7 +102,10 @@ export class NewsProviderService {
       limit: Math.min(limit, 100).toString(),
     };
 
-    const response = await this.makeRequest<CoinDeskSearchResponse>('/search', params);
+    const response = await this.makeRequest<CoinDeskSearchResponse>(
+      '/search',
+      params,
+    );
 
     const articles = this.normalizeArticles(response.Data || []);
 
@@ -108,11 +117,16 @@ export class NewsProviderService {
     };
   }
 
-  async getArticle(options: GetArticleOptions): Promise<SingleArticleResponseDto> {
+  async getArticle(
+    options: GetArticleOptions,
+  ): Promise<SingleArticleResponseDto> {
     const { sourceKey, guid } = options;
 
     if (!sourceKey || !guid) {
-      throw new HttpException('Source key and GUID are required', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Source key and GUID are required',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const params: Record<string, string> = {
@@ -126,14 +140,16 @@ export class NewsProviderService {
         params,
       );
 
-      const article = response.Data ? this.normalizeArticle(response.Data) : null;
+      const article = response.Data
+        ? this.normalizeArticle(response.Data)
+        : null;
 
       return {
         article,
         fetchedAt: new Date().toISOString(),
       };
     } catch (error) {
-      if (error instanceof HttpException && error.getStatus() === HttpStatus.NOT_FOUND) {
+      if (error instanceof HttpException && error.getStatus() === 404) {
         return { article: null, fetchedAt: new Date().toISOString() };
       }
       throw error;
@@ -208,7 +224,10 @@ export class NewsProviderService {
       );
 
       if (!response.data) {
-        throw new HttpException('Empty response from provider', HttpStatus.BAD_GATEWAY);
+        throw new HttpException(
+          'Empty response from provider',
+          HttpStatus.BAD_GATEWAY,
+        );
       }
 
       return response.data;
@@ -217,8 +236,13 @@ export class NewsProviderService {
         throw error;
       }
 
-      this.logger.error(`Request error: ${error instanceof Error ? error.message : 'Unknown'}`);
-      throw new HttpException('Failed to fetch from provider', HttpStatus.INTERNAL_SERVER_ERROR);
+      this.logger.error(
+        `Request error: ${error instanceof Error ? error.message : 'Unknown'}`,
+      );
+      throw new HttpException(
+        'Failed to fetch from provider',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -233,7 +257,9 @@ export class NewsProviderService {
   private normalizeArticle(raw: CoinDeskArticle): NewsArticleDto {
     const categories = (raw.CATEGORY_DATA || []).map((cat) => cat.NAME);
     const keywords = raw.KEYWORDS
-      ? raw.KEYWORDS.split('|').map((k) => k.trim()).filter(Boolean)
+      ? raw.KEYWORDS.split('|')
+          .map((k) => k.trim())
+          .filter(Boolean)
       : [];
 
     const coinSymbols = this.extractCoinSymbols([...categories, ...keywords]);
@@ -260,7 +286,9 @@ export class NewsProviderService {
     };
   }
 
-  private normalizeCategories(rawCategories: CoinDeskCategory[]): NewsCategoryDto[] {
+  private normalizeCategories(
+    rawCategories: CoinDeskCategory[],
+  ): NewsCategoryDto[] {
     if (!Array.isArray(rawCategories)) return [];
     return rawCategories.map((cat) => ({
       id: cat.ID?.toString() || '',
@@ -271,15 +299,51 @@ export class NewsProviderService {
 
   private extractCoinSymbols(items: string[]): string[] {
     const knownSymbols = new Set([
-      'BTC', 'ETH', 'XRP', 'SOL', 'ADA', 'DOGE', 'DOT', 'MATIC', 'LINK', 'UNI',
-      'AVAX', 'ATOM', 'LTC', 'XLM', 'ALGO', 'VET', 'FIL', 'NEAR', 'APT', 'ARB',
-      'OP', 'USDT', 'USDC', 'BNB', 'TRX', 'SHIB', 'TON', 'SUI', 'SEI', 'INJ',
-      'BITCOIN', 'ETHEREUM', 'SOLANA', 'CARDANO', 'POLKADOT', 'POLYGON',
+      'BTC',
+      'ETH',
+      'XRP',
+      'SOL',
+      'ADA',
+      'DOGE',
+      'DOT',
+      'MATIC',
+      'LINK',
+      'UNI',
+      'AVAX',
+      'ATOM',
+      'LTC',
+      'XLM',
+      'ALGO',
+      'VET',
+      'FIL',
+      'NEAR',
+      'APT',
+      'ARB',
+      'OP',
+      'USDT',
+      'USDC',
+      'BNB',
+      'TRX',
+      'SHIB',
+      'TON',
+      'SUI',
+      'SEI',
+      'INJ',
+      'BITCOIN',
+      'ETHEREUM',
+      'SOLANA',
+      'CARDANO',
+      'POLKADOT',
+      'POLYGON',
     ]);
 
     const symbolMap: Record<string, string> = {
-      BITCOIN: 'BTC', ETHEREUM: 'ETH', SOLANA: 'SOL',
-      CARDANO: 'ADA', POLKADOT: 'DOT', POLYGON: 'MATIC',
+      BITCOIN: 'BTC',
+      ETHEREUM: 'ETH',
+      SOLANA: 'SOL',
+      CARDANO: 'ADA',
+      POLKADOT: 'DOT',
+      POLYGON: 'MATIC',
     };
 
     const found: string[] = [];
@@ -297,13 +361,19 @@ export class NewsProviderService {
     this.logger.error(`API error: ${status || 'unknown'} - ${error.message}`);
 
     if (status === 401 || status === 403) {
-      throw new HttpException('Invalid or missing API key', HttpStatus.UNAUTHORIZED);
+      throw new HttpException(
+        'Invalid or missing API key',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
     if (status === 404) {
       throw new HttpException('Resource not found', HttpStatus.NOT_FOUND);
     }
     if (status === 429) {
-      throw new HttpException('Rate limit exceeded', HttpStatus.TOO_MANY_REQUESTS);
+      throw new HttpException(
+        'Rate limit exceeded',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
     if (status && status >= 500) {
       throw new HttpException('Provider unavailable', HttpStatus.BAD_GATEWAY);
@@ -311,6 +381,9 @@ export class NewsProviderService {
     if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
       throw new HttpException('Request timed out', HttpStatus.GATEWAY_TIMEOUT);
     }
-    throw new HttpException('Failed to communicate with provider', HttpStatus.BAD_GATEWAY);
+    throw new HttpException(
+      'Failed to communicate with provider',
+      HttpStatus.BAD_GATEWAY,
+    );
   }
 }

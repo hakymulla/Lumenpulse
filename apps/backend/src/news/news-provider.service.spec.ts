@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import { of, throwError } from 'rxjs';
 import { AxiosResponse, AxiosError, AxiosHeaders } from 'axios';
 import { NewsProviderService } from './news-provider.service';
@@ -75,8 +76,22 @@ describe('NewsProviderService', () => {
 
   const mockCategoryResponse: CoinDeskCategoryListResponse = {
     Data: [
-      { TYPE: '122', ID: 14, NAME: 'BTC', STATUS: 'ACTIVE', CREATED_ON: 1657730110, UPDATED_ON: null },
-      { TYPE: '122', ID: 23, NAME: 'ETH', STATUS: 'ACTIVE', CREATED_ON: 1657730110, UPDATED_ON: null },
+      {
+        TYPE: '122',
+        ID: 14,
+        NAME: 'BTC',
+        STATUS: 'ACTIVE',
+        CREATED_ON: 1657730110,
+        UPDATED_ON: null,
+      },
+      {
+        TYPE: '122',
+        ID: 23,
+        NAME: 'ETH',
+        STATUS: 'ACTIVE',
+        CREATED_ON: 1657730110,
+        UPDATED_ON: null,
+      },
     ],
     Err: {},
   };
@@ -93,7 +108,11 @@ describe('NewsProviderService', () => {
         { provide: HttpService, useValue: { get: jest.fn() } },
         {
           provide: ConfigService,
-          useValue: { get: jest.fn((key: string) => key === 'COINDESK_API_KEY' ? mockApiKey : undefined) },
+          useValue: {
+            get: jest.fn((key: string) =>
+              key === 'COINDESK_API_KEY' ? mockApiKey : undefined,
+            ),
+          },
         },
       ],
     }).compile();
@@ -112,7 +131,9 @@ describe('NewsProviderService', () => {
 
   describe('getLatestArticles', () => {
     it('should fetch and normalize latest articles', async () => {
-      jest.spyOn(httpService, 'get').mockReturnValue(of(mockResponse(mockArticleListResponse)));
+      jest
+        .spyOn(httpService, 'get')
+        .mockReturnValue(of(mockResponse(mockArticleListResponse)));
 
       const result = await service.getLatestArticles({ limit: 20 });
 
@@ -127,7 +148,8 @@ describe('NewsProviderService', () => {
     });
 
     it('should call correct endpoint with Authorization header', async () => {
-      const getSpy = jest.spyOn(httpService, 'get').mockReturnValue(of(mockResponse(mockArticleListResponse)));
+      const getSpy = jest.spyOn(httpService, 'get');
+      getSpy.mockReturnValue(of(mockResponse(mockArticleListResponse)));
 
       await service.getLatestArticles({ limit: 30, lang: 'EN' });
 
@@ -135,7 +157,9 @@ describe('NewsProviderService', () => {
         expect.stringContaining('/article/list'),
         expect.objectContaining({
           params: { lang: 'EN', limit: '30' },
-          headers: expect.objectContaining({ Authorization: `Apikey ${mockApiKey}` }),
+          headers: expect.objectContaining({
+            Authorization: `Apikey ${mockApiKey}`,
+          }),
         }),
       );
     });
@@ -143,7 +167,8 @@ describe('NewsProviderService', () => {
 
   describe('searchArticles', () => {
     it('should search articles with source_key', async () => {
-      const getSpy = jest.spyOn(httpService, 'get').mockReturnValue(of(mockResponse(mockSearchResponse)));
+      const getSpy = jest.spyOn(httpService, 'get');
+      getSpy.mockReturnValue(of(mockResponse(mockSearchResponse)));
 
       const result = await service.searchArticles({
         searchString: 'Bitcoin',
@@ -164,19 +189,23 @@ describe('NewsProviderService', () => {
     });
 
     it('should throw error for empty search string', async () => {
-      await expect(service.searchArticles({ searchString: '', sourceKey: 'coindesk' }))
-        .rejects.toMatchObject({ status: HttpStatus.BAD_REQUEST });
+      await expect(
+        service.searchArticles({ searchString: '', sourceKey: 'coindesk' }),
+      ).rejects.toMatchObject({ status: HttpStatus.BAD_REQUEST });
     });
 
     it('should throw error for missing source_key', async () => {
-      await expect(service.searchArticles({ searchString: 'Bitcoin', sourceKey: '' }))
-        .rejects.toMatchObject({ status: HttpStatus.BAD_REQUEST });
+      await expect(
+        service.searchArticles({ searchString: 'Bitcoin', sourceKey: '' }),
+      ).rejects.toMatchObject({ status: HttpStatus.BAD_REQUEST });
     });
   });
 
   describe('getArticle', () => {
     it('should fetch single article', async () => {
-      jest.spyOn(httpService, 'get').mockReturnValue(of(mockResponse(mockSingleArticleResponse)));
+      jest
+        .spyOn(httpService, 'get')
+        .mockReturnValue(of(mockResponse(mockSingleArticleResponse)));
 
       const result = await service.getArticle({
         sourceKey: 'coindesk',
@@ -189,17 +218,30 @@ describe('NewsProviderService', () => {
 
     it('should return null for 404', async () => {
       const axiosError = new AxiosError('Not Found');
-      axiosError.response = { status: 404, statusText: 'Not Found', data: {}, headers: {}, config: { headers: new AxiosHeaders() } };
-      jest.spyOn(httpService, 'get').mockReturnValue(throwError(() => axiosError));
+      axiosError.response = {
+        status: 404,
+        statusText: 'Not Found',
+        data: {},
+        headers: {},
+        config: { headers: new AxiosHeaders() },
+      };
+      jest
+        .spyOn(httpService, 'get')
+        .mockReturnValue(throwError(() => axiosError));
 
-      const result = await service.getArticle({ sourceKey: 'coindesk', guid: 'not-found' });
+      const result = await service.getArticle({
+        sourceKey: 'coindesk',
+        guid: 'not-found',
+      });
       expect(result.article).toBeNull();
     });
   });
 
   describe('getCategories', () => {
     it('should fetch categories', async () => {
-      jest.spyOn(httpService, 'get').mockReturnValue(of(mockResponse(mockCategoryResponse)));
+      jest
+        .spyOn(httpService, 'get')
+        .mockReturnValue(of(mockResponse(mockCategoryResponse)));
 
       const result = await service.getCategories();
 
@@ -211,14 +253,18 @@ describe('NewsProviderService', () => {
 
   describe('getArticlesByCoin', () => {
     it('should search with coin symbol', async () => {
-      const getSpy = jest.spyOn(httpService, 'get').mockReturnValue(of(mockResponse(mockSearchResponse)));
+      const getSpy = jest.spyOn(httpService, 'get');
+      getSpy.mockReturnValue(of(mockResponse(mockSearchResponse)));
 
       await service.getArticlesByCoin('btc', 10);
 
       expect(getSpy).toHaveBeenCalledWith(
         expect.stringContaining('/search'),
         expect.objectContaining({
-          params: expect.objectContaining({ search_string: 'BTC', source_key: 'coindesk' }),
+          params: expect.objectContaining({
+            search_string: 'BTC',
+            source_key: 'coindesk',
+          }),
         }),
       );
     });
@@ -227,32 +273,58 @@ describe('NewsProviderService', () => {
   describe('error handling', () => {
     it('should handle 401', async () => {
       const axiosError = new AxiosError('Unauthorized');
-      axiosError.response = { status: 401, statusText: 'Unauthorized', data: {}, headers: {}, config: { headers: new AxiosHeaders() } };
-      jest.spyOn(httpService, 'get').mockReturnValue(throwError(() => axiosError));
+      axiosError.response = {
+        status: 401,
+        statusText: 'Unauthorized',
+        data: {},
+        headers: {},
+        config: { headers: new AxiosHeaders() },
+      };
+      jest
+        .spyOn(httpService, 'get')
+        .mockReturnValue(throwError(() => axiosError));
 
-      await expect(service.getLatestArticles()).rejects.toMatchObject({ status: HttpStatus.UNAUTHORIZED });
+      await expect(service.getLatestArticles()).rejects.toMatchObject({
+        status: HttpStatus.UNAUTHORIZED,
+      });
     });
 
     it('should handle 429', async () => {
       const axiosError = new AxiosError('Too Many Requests');
-      axiosError.response = { status: 429, statusText: 'Too Many Requests', data: {}, headers: {}, config: { headers: new AxiosHeaders() } };
-      jest.spyOn(httpService, 'get').mockReturnValue(throwError(() => axiosError));
+      axiosError.response = {
+        status: 429,
+        statusText: 'Too Many Requests',
+        data: {},
+        headers: {},
+        config: { headers: new AxiosHeaders() },
+      };
+      jest
+        .spyOn(httpService, 'get')
+        .mockReturnValue(throwError(() => axiosError));
 
-      await expect(service.getLatestArticles()).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });
+      await expect(service.getLatestArticles()).rejects.toMatchObject({
+        status: HttpStatus.TOO_MANY_REQUESTS,
+      });
     });
 
     it('should handle timeout', async () => {
       const axiosError = new AxiosError('Timeout');
       axiosError.code = 'ECONNABORTED';
-      jest.spyOn(httpService, 'get').mockReturnValue(throwError(() => axiosError));
+      jest
+        .spyOn(httpService, 'get')
+        .mockReturnValue(throwError(() => axiosError));
 
-      await expect(service.getLatestArticles()).rejects.toMatchObject({ status: HttpStatus.GATEWAY_TIMEOUT });
+      await expect(service.getLatestArticles()).rejects.toMatchObject({
+        status: HttpStatus.GATEWAY_TIMEOUT,
+      });
     });
   });
 
   describe('normalization', () => {
     it('should parse CATEGORY_DATA correctly', async () => {
-      jest.spyOn(httpService, 'get').mockReturnValue(of(mockResponse(mockArticleListResponse)));
+      jest
+        .spyOn(httpService, 'get')
+        .mockReturnValue(of(mockResponse(mockArticleListResponse)));
 
       const result = await service.getLatestArticles();
 
@@ -261,7 +333,9 @@ describe('NewsProviderService', () => {
     });
 
     it('should extract keywords from pipe-separated string', async () => {
-      jest.spyOn(httpService, 'get').mockReturnValue(of(mockResponse(mockArticleListResponse)));
+      jest
+        .spyOn(httpService, 'get')
+        .mockReturnValue(of(mockResponse(mockArticleListResponse)));
 
       const result = await service.getLatestArticles();
 
@@ -270,11 +344,15 @@ describe('NewsProviderService', () => {
     });
 
     it('should include source metadata', async () => {
-      jest.spyOn(httpService, 'get').mockReturnValue(of(mockResponse(mockArticleListResponse)));
+      jest
+        .spyOn(httpService, 'get')
+        .mockReturnValue(of(mockResponse(mockArticleListResponse)));
 
       const result = await service.getLatestArticles();
 
-      expect(result.articles[0].sourceImageUrl).toBe('https://coindesk.com/logo.png');
+      expect(result.articles[0].sourceImageUrl).toBe(
+        'https://coindesk.com/logo.png',
+      );
     });
   });
 });
