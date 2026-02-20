@@ -9,7 +9,6 @@ import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { User } from '../users/entities/user.entity';
-import { User as EmailUser } from '../entities/user.entity';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
@@ -24,6 +23,7 @@ import {
 } from 'stellar-sdk';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
+import { EmailService } from '../email/email.service';
 
 interface ChallengeData {
   nonce: string;
@@ -47,13 +47,12 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @InjectRepository(EmailUser)
-    private readonly emailUserRepository: Repository<EmailUser>,
     @InjectRepository(PasswordResetToken)
     private readonly resetTokenRepository: Repository<PasswordResetToken>,
     private usersService: UsersService,
     private jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly emailService: EmailService,
   ) {
     // Initialize server keypair
     const serverSecret = this.configService.get<string>(
@@ -239,12 +238,12 @@ export class AuthService {
 
     // Find or create user with this Stellar public key
     let user = await this.userRepository.findOne({
-      where: { id: publicKey },
+      where: { stellarPublicKey: publicKey },
     });
 
     if (!user) {
       user = this.userRepository.create({
-        id: publicKey,
+        stellarPublicKey: publicKey,
         updatedAt: new Date(),
       });
       await this.userRepository.save(user);
@@ -269,7 +268,6 @@ export class AuthService {
       token,
       user: {
         id: user.id,
-        passwordHash: user.id,
         createdAt: user.createdAt,
       },
     };
@@ -281,7 +279,7 @@ export class AuthService {
    * an email exists in the system.
    */
   async forgotPassword(email: string): Promise<{ message: string }> {
-    const user = await this.emailUserRepository.findOne({
+    const user = await this.userRepository.findOne({
       where: { email: email.toLowerCase().trim() },
     });
 
@@ -315,11 +313,8 @@ export class AuthService {
     });
     await this.resetTokenRepository.save(resetToken);
 
-    // In production, send an email with the raw token embedded in a link.
-    // For now, log the token so the flow can be tested end-to-end.
-    this.logger.log(
-      `Password reset token generated for user ${user.id}. Token (mock email): ${rawToken}`,
-    );
+    // Send the email (mocked)
+    await this.emailService.sendPasswordResetEmail(user.email, rawToken);
 
     return {
       message: 'If that email is registered, a reset link has been sent.',
@@ -359,7 +354,7 @@ export class AuthService {
       );
     }
 
-    const user = await this.emailUserRepository.findOne({
+    const user = await this.userRepository.findOne({
       where: { id: storedToken.userId },
     });
 
@@ -372,7 +367,7 @@ export class AuthService {
       newPassword,
       AuthService.BCRYPT_SALT_ROUNDS,
     );
-    await this.emailUserRepository.save(user);
+    await this.userRepository.save(user);
 
     // Invalidate the token
     storedToken.usedAt = new Date();

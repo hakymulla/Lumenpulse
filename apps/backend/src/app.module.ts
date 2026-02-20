@@ -8,6 +8,7 @@ import { SentimentModule } from './sentiment/sentiment.module';
 import { NewsModule } from './news/news.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { EmailModule } from './email/email.module';
 import databaseConfig from './database/database.config';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { TestController } from './test/test.controller';
@@ -38,6 +39,7 @@ import { TestController } from './test/test.controller';
     NewsModule,
     AuthModule,
     UsersModule,
+    EmailModule,
   ],
   controllers: [AppController, TestController, TestExceptionController],
   providers: [AppService],
